@@ -5,7 +5,7 @@ Achieves bit-exact reproducibility across different GPU counts,
 hardware generations, parallelism strategies, and frameworks.
 """
 
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 
 from carbon.deterministic import enable, disable, is_enabled
 from carbon.reduction import DeterministicAllReduce, DeterministicReduceScatter
