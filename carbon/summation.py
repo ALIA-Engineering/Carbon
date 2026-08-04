@@ -22,11 +22,17 @@ class KahanAccumulator:
     """
     Kahan-Babushka-Neumaier summation.
 
-    Tracks a running compensation term that captures rounding errors.
-    The result is reproducible regardless of input order, as long as
-    we process elements in a canonical (sorted) order.
+    Tracks a running compensation term that captures rounding errors, giving
+    an O(eps) error bound instead of O(n*eps) for naive summation.
 
-    Error bound: O(eps) instead of O(n*eps) for naive summation.
+    KBN is *order-dependent*: feeding the same multiset of values in a
+    different sequence can produce different bits. It is not an
+    order-independent (reproducible) summation in the ReproBLAS sense. What
+    makes results reproducible here is that callers impose a canonical order
+    before accumulating -- see ``CompensatedSum._kahan_sum``, which sorts along
+    the reduction dimension, and the serial tile loop in ``carbon.matmul``.
+    The compensation improves accuracy; the fixed order is what provides
+    determinism. Both are required.
     """
 
     def __init__(self, shape: tuple, dtype: torch.dtype = torch.float64,

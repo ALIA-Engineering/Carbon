@@ -42,6 +42,14 @@ output/
 *.json
 !pyproject.toml
 
+# Determinism evidence MUST be committed. The central claim of this repo is a
+# set of weight hashes; ignoring the artifacts that record them makes the
+# claim unverifiable by anyone reading the README.
+!benchmarks/**/*_proof.json
+# benchmarks/real_model_determinism.py writes real_model_carbon.json (the
+# GPT-2 proof). It stays git-ignored until a run produces it; add
+# !benchmarks/**/*_carbon.json to the allow-list at that point.
+
 # Compiled
 *.so
 *.o

@@ -400,6 +400,22 @@ use standard PyTorch but are not updated, so they do not affect determinism.
 Full cross-architecture determinism of standard \texttt{nn.Linear} modules
 requires replacing them with Carbon equivalents.
 
+\subsection{Datacenter GPUs (H100 SXM, A100 SXM)}
+\label{sec:datacenter}
+
+The consumer-GPU validation was complemented by runs on NVIDIA H100 SXM and
+A100 SXM instances rented through RunPod. Within the datacenter tier the H100
+and A100 runs matched each other bit-exactly, just as the consumer runs
+matched each other. Cross-tier runs do not match: training the same model on
+a consumer GPU and a datacenter GPU yields different weight hashes, even
+though each tier is internally reproducible.
+
+Evidence status: the H100 and A100 runs were performed on RunPod and their
+outputs were not committed to this repository. No proof artifacts for the
+datacenter runs are included here, so their hash values cannot be verified
+from the repo. The hash values in Tables~\ref{tab:hashes} and
+\ref{tab:multiseed} cover the RTX 4090 and RTX 5090 runs only.
+
 \subsection{Overhead}
 
 \begin{table}[h]
@@ -438,8 +454,11 @@ PyTorch's \texttt{torch.use\_deterministic\_algorithms(True)} achieves the
 latter: run the same code twice on the same GPU and get the same result.
 Carbon achieves the former for models built with Carbon's custom layers: run
 on \emph{any consumer GPU} and get the same result. We validated this on
-RTX 4090 (Ada Lovelace) and RTX 5090 (Blackwell). Datacenter GPU
-determinism (H100, A100) is untested and left for future work.
+RTX 4090 (Ada Lovelace) and RTX 5090 (Blackwell), and additionally ran the
+benchmarks on H100 SXM and A100 SXM instances rented through RunPod
+(Section~\ref{sec:datacenter}). Datacenter GPUs match each other bit-exactly,
+as do consumer GPUs, but cross-tier runs (consumer vs.\ datacenter) produce
+different hashes; we report this asymmetry rather than hiding it.
 
 This distinction is critical for:
 

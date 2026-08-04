@@ -19,6 +19,7 @@ import hashlib
 import os
 import sys
 import json
+import re
 import time
 from pathlib import Path
 
@@ -46,21 +47,9 @@ class CarbonLinear(nn.Module):
         return self.linear(x)
 
 
-class CarbonLayerNorm(nn.Module):
-    """LayerNorm using compensated summation for cross-GPU determinism."""
-    def __init__(self, dim, eps=1e-5):
-        super().__init__()
-        self.weight = nn.Parameter(torch.ones(dim))
-        self.bias = nn.Parameter(torch.zeros(dim))
-        self.eps = eps
-
-    def forward(self, x):
-        # Use float64 accumulation for cross-GPU determinism
-        xf = x.to(torch.float64)
-        mean = xf.mean(dim=-1, keepdim=True)
-        var = ((xf - mean) ** 2).mean(dim=-1, keepdim=True)
-        normed = ((xf - mean) / torch.sqrt(var + self.eps)).to(x.dtype)
-        return normed * self.weight + self.bias
+# Use the shipped layer, not a benchmark-local copy, so this experiment
+# exercises the same code a user of the package would get.
+from carbon.normalization import CarbonLayerNorm
 
 
 class TinyTransformer(nn.Module):
@@ -151,12 +140,72 @@ def train_on_device(seed: int, steps: int, device: str,
     }
 
 
+def check_device_supported(index: int) -> tuple[bool, str]:
+    """Verify this PyTorch build actually has kernels for the device.
+
+    A PyTorch wheel only ships cubins for the architectures it was built
+    against. Running on a newer card (e.g. sm_120 Blackwell on a cu124 wheel)
+    fails at the first kernel launch with an opaque "no kernel image is
+    available for execution on the device". Detect that up front so a failed
+    determinism run is never mistaken for a determinism result.
+    """
+    name = torch.cuda.get_device_name(index)
+    major, minor = torch.cuda.get_device_capability(index)
+    sm = f"sm_{major}{minor}"
+    arch_list = torch.cuda.get_arch_list()
+
+    cc = major * 10 + minor
+
+    def _cc(tag: str) -> int:
+        # Arch tags may carry a suffix (e.g. "sm_90a"); pull out the digits.
+        return int(re.search(r"\d+", tag).group())
+
+    # Exact cubin match.
+    supported = sm in arch_list
+
+    # CUDA guarantees binary compatibility within a major compute capability,
+    # so an sm_86 cubin runs on an sm_89 device. Across majors it does not.
+    if not supported:
+        supported = any(
+            a.startswith("sm_") and _cc(a) // 10 == major and _cc(a) <= cc
+            for a in arch_list
+        )
+
+    # Embedded PTX for a lower arch can be JIT-compiled forward.
+    if not supported:
+        ptx = [_cc(a) for a in arch_list if a.startswith("compute_")]
+        supported = any(p <= cc for p in ptx)
+
+    detail = (f"{name} ({sm}); this torch {torch.__version__} was built for "
+              f"[{', '.join(arch_list)}]")
+    return supported, detail
+
+
 def run_cross_gpu():
     num_gpus = torch.cuda.device_count()
     if num_gpus < 2:
         print("Need 2 GPUs for cross-GPU test. Found:", num_gpus)
         print("Running single-GPU determinism test instead.")
         return
+
+    unsupported = []
+    for i in range(2):
+        ok, detail = check_device_supported(i)
+        status = "OK " if ok else "UNSUPPORTED"
+        print(f"  GPU {i}: {status} - {detail}")
+        if not ok:
+            unsupported.append(i)
+
+    if unsupported:
+        print()
+        print("  ABORT: this PyTorch build cannot execute kernels on GPU(s) "
+              f"{unsupported}.")
+        print("  The cross-GPU determinism claim cannot be evaluated in this "
+              "environment.")
+        print("  Install a wheel built for the newer architecture, e.g.:")
+        print("    pip install --index-url https://download.pytorch.org/whl/cu128 "
+              "torch --upgrade")
+        raise SystemExit(2)
 
     gpu0_name = torch.cuda.get_device_name(0)
     gpu1_name = torch.cuda.get_device_name(1)

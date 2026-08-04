@@ -43,7 +43,7 @@ RTX 4090:  hash = 62118e9c...  loss = 0.070026
 RTX 5090:  hash = 62118e9c...  loss = 0.070026
 ```
 
-**Identical.** 10 seeds tested, up to 500 steps, every configuration matches.
+**Identical.** 5 seeds tested, up to 500 steps, every configuration matches.
 
 ## How It Works
 
@@ -60,7 +60,7 @@ The mechanism: split every matmul into tiles, upcast to float64, accumulate with
 
 ## The Proof
 
-### Toy Model (500K params, 50 steps, 5 seeds)
+### Toy Model (500K params, 500 steps, 5 seeds)
 
 | Seed | Steps | 4090 Hash | 5090 Hash | Match |
 |------|-------|-----------|-----------|-------|
@@ -70,7 +70,7 @@ The mechanism: split every matmul into tiles, upcast to float64, accumulate with
 | 999 | 500 | `8cc60024...` | `8cc60024...` | **yes** |
 | 2024 | 500 | `1e420d04...` | `1e420d04...` | **yes** |
 
-10 out of 10 configurations. Every hash matches.
+5 out of 5 configurations. Every hash matches.
 
 ### GPT-2 124M Fine-Tune (60M trainable, 20 steps)
 
@@ -117,11 +117,13 @@ Consumer GPUs match each other. Datacenter GPUs match each other. Cross-tier (co
 
 ## Roadmap
 
-**v0.1 (current)** - Proof of concept. KBN summation, tiled fp64 matmul, Python-level tiling.
+**v0.1** - Proof of concept. KBN summation, tiled fp64 matmul, Python-level tiling.
 
-**v0.2** - Performance. Replace Kahan accumulation with [superaccumulators](https://github.com/radfordneal/xsum) for order-independent exact summation. This eliminates the need for fixed tile order and could close the consumer-vs-datacenter hash gap. CUDA-native tiled matmul to cut the 10x overhead to under 2x.
+**v0.2 (current)** - WebGPU backend. The same bit-exact algorithms (Kahan-compensated tiled matmul, fixed-order reduction, compensated summation) as WGSL compute shaders, no CUDA required. Works on any WebGPU-capable GPU (NVIDIA, AMD, Intel, Apple Silicon). Install with `pip install alia-carbon[wgpu]`.
 
-**v0.3** - Scale. Mixed precision (bf16 forward, fp32 master weights). Multi-GPU deterministic allreduce. FSDP/DDP integration. Target: deterministic fine-tuning of 7B+ models.
+**v0.3** - Performance. Replace Kahan accumulation with [superaccumulators](https://github.com/radfordneal/xsum) for order-independent exact summation. This eliminates the need for fixed tile order and could close the consumer-vs-datacenter hash gap. CUDA-native tiled matmul to cut the 10x overhead to under 2x.
+
+**v0.4** - Scale. Mixed precision (bf16 forward, fp32 master weights). Multi-GPU deterministic allreduce. FSDP/DDP integration. Target: deterministic fine-tuning of 7B+ models.
 
 ## License
 
