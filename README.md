@@ -3,7 +3,7 @@
   <p align="center"><b>Same seed. Different GPU. Identical weights.</b></p>
   <p align="center">
     <a href="https://pypi.org/project/alia-carbon/"><img src="https://img.shields.io/pypi/v/alia-carbon?color=blue&label=PyPI" alt="PyPI"></a>
-    <a href="https://github.com/TxsharDev/carbon/blob/master/LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-green" alt="License"></a>
+    <a href="https://github.com/ALIA-Engineering/Carbon/blob/master/LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-green" alt="License"></a>
     <a href="#the-proof"><img src="https://img.shields.io/badge/4090%20%3D%205090-bit--exact-brightgreen" alt="Deterministic"></a>
   </p>
 </p>
@@ -111,7 +111,7 @@ Consumer GPUs match each other. Datacenter GPUs match each other. Cross-tier (co
   title={Carbon: Bit-Exact Deterministic Training Across Consumer GPU Architectures},
   author={Sharma, Tushar},
   year={2026},
-  url={https://github.com/TxsharDev/carbon}
+  url={https://github.com/ALIA-Engineering/Carbon}
 }
 ```
 

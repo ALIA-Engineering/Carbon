@@ -21,7 +21,7 @@ dev = ["pytest>=7.0", "pytest-benchmark"]
 all = ["wgpu>=0.15"]
 
 [project.urls]
-Homepage = "https://github.com/TxsharDev/carbon"
+Homepage = "https://github.com/ALIA-Engineering/Carbon"
 
 [tool.setuptools.packages.find]
 where = ["."]
